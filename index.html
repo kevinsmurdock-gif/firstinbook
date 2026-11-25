@@ -242,5 +242,31 @@ footer{background:var(--navy);border-top:1px solid rgba(196,154,46,.15);padding:
     </div>
   </div>
 </section>
+<!-- PR-site form copy to RepOS -> GHL (Kevin, 2026-11-24, HANDOFF #7758). ONE SOURCE: ghl-automation-server-
+     tools/pr-site-form/snippet.html. Paste it unchanged just before </body> on kevinsmurdock.com and firstinbook.com.
+     Every form that posts to formspree.io also sends a background copy to RepOS, which forwards it to the GHL "PR site
+     inquiry" workflow. The form itself still submits to Formspree exactly as before, so Kevin's Gmail copy is unchanged.
+     The copy is form-encoded (a simple CORS request: no preflight) and keepalive, so it survives the page leaving for
+     Formspree. A failure here never blocks or delays the real submit. -->
+<script>
+(function () {
+  var URL_ = 'https://app.rep-os.ai/webhook/pr-site-form';
+  function val(f, n) { var e = f.elements[n]; return e && typeof e.value === 'string' ? e.value : ''; }
+  document.addEventListener('submit', function (ev) {
+    var f = ev.target;
+    if (!f || !/formspree\.io/.test(f.getAttribute('action') || '')) return;
+    try {
+      var p = new URLSearchParams();
+      p.set('name', val(f, 'name') || [val(f, 'first_name'), val(f, 'last_name')].join(' ').trim());
+      p.set('email', val(f, 'email') || val(f, '_replyto'));
+      p.set('phone', val(f, 'phone'));
+      p.set('message', val(f, 'message'));
+      p.set('page', location.href.split('#')[0]);
+      p.set('_gotcha', val(f, '_gotcha'));
+      fetch(URL_, { method: 'POST', body: p, keepalive: true, mode: 'cors', credentials: 'omit' }).catch(function () {});
+    } catch (e) { /* never block the real submit */ }
+  }, true);
+})();
+</script>
 </body>
 </html>
